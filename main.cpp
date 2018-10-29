@@ -9,6 +9,7 @@ template<typename T, size_t MaxSize>
 struct allocator
 {
     using value_type = T;
+    using pointer = T *;
 
 private:
     unsigned char *data = nullptr;
@@ -21,7 +22,7 @@ public:
         using other = allocator<U, MaxSize>;
     };
 
-    T *allocate(std::size_t n)
+    pointer allocate(std::size_t n)
     {
         if ( (offset + n * sizeof(value_type)) > (MaxSize * sizeof(value_type)) )
             throw std::bad_alloc();
@@ -35,7 +36,7 @@ public:
         return static_cast<T *>(addr);
     }
 
-    void deallocate(T *, std::size_t n)
+    void deallocate(pointer, std::size_t n)
     {
         if (data != nullptr)
         {
@@ -50,12 +51,12 @@ public:
     }
 
     template <typename ... Args >
-    void construct(T* p, Args&& ... args)
+    void construct(pointer p, Args&& ... args)
     {
         new(p) T(std::forward <Args>(args) ... );
     }
 
-    void destroy(T *p)
+    void destroy(pointer p)
     {
         p->~T();
     }
