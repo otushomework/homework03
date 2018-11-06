@@ -4,6 +4,7 @@
 #include <typeinfo>
 
 #define COUNT 10
+//#define _DEBUG_
 
 template<typename T, size_t MaxSize>
 struct allocator
@@ -31,7 +32,12 @@ public:
             throw std::bad_alloc();
 
         if (data == nullptr)
+        {
             data = ( unsigned char * ) malloc( MaxSize * sizeof( value_type ) );
+#ifdef _DEBUG_
+            std::cout << "allocate " << MaxSize * sizeof( value_type ) << std::endl;
+#endif
+        }
 
         void *addr = data + offset;
         offset += sizeof(value_type) * n;
@@ -49,6 +55,9 @@ public:
             {
                 free(data);
                 data = nullptr;
+#ifdef _DEBUG_
+            std::cout << "deallocate " << MaxSize * sizeof( value_type ) << std::endl;
+#endif
             }
         }
     }
@@ -92,6 +101,22 @@ private:
 
 public:
     ForwardList() = default;
+
+    ForwardList(const ForwardList &other)
+    {
+        for(const auto& it : other)
+            append(it);
+    }
+
+    ForwardList(ForwardList&& other)
+        : m_allocator(other.m_allocator)
+        , m_root(other.m_root)
+        , m_head(other.m_head)
+    {
+        other.m_root = nullptr;
+        other.m_head = nullptr;
+    }
+
     ~ForwardList()
     {
         auto node = m_root;
@@ -131,29 +156,30 @@ public:
         Node<T>* m_node;
     };
 
-    iterator begin()
+    iterator begin() const
     {
         return iterator(m_root);
     }
 
-    iterator end()
+    iterator end() const
     {
         return nullptr;
     }
 
-    void append(T value)
+    template <typename T1>
+    void append(T1&& value)
     {
         auto newNode = m_allocator.allocate(1);
         m_allocator.construct(newNode, value);
 
         if (m_root == nullptr)
         {
-            m_root = std::move(newNode);
+            m_root = newNode;
             m_head = m_root;
         }
         else
         {
-            m_head->next = std::move(newNode);
+            m_head->next = newNode;
             m_head = m_head->next;
         }
     }
@@ -190,7 +216,13 @@ int main(int, char *[])
     for (int i = 0; i < COUNT; ++i)
         container4.append(i);
 
-    for(const auto& it : container4)
+    //move
+    ForwardList<int, allocator<int, COUNT> > container5(std::move(container4));
+
+    //copy
+    ForwardList<int, allocator<int, COUNT> > container6(container5);
+
+    for(const auto& it : container6)
         std::cout << it << std::endl;
 
     return 0;
