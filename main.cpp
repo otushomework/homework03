@@ -166,11 +166,11 @@ public:
         return nullptr;
     }
 
-    template <typename T1>
-    void append(T1&& value)
+    template <typename ... Args >
+    void append(Args&& ... args)
     {
         auto newNode = m_allocator.allocate(1);
-        m_allocator.construct(newNode, value);
+        m_allocator.construct(newNode, std::forward <Args>(args) ... );
 
         if (m_root == nullptr)
         {
